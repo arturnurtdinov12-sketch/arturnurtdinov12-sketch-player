@@ -39,16 +39,29 @@ class TdLibTelegramClient @Inject constructor(
 
     override suspend fun start() {
         if (client != null) return
-        tryLoadNative()
-        val updateHandler = Client.ResultHandler { obj -> handleUpdate(obj) }
-        val excHandler = Client.ExceptionHandler { /* swallow — surfaced via authState */ }
-        client = Client.create(updateHandler, excHandler, excHandler)
-        sendTdlibParameters()
+        if (!tryLoadNative()) {
+            _authState.value = AuthState.Error(
+                "Native TDLib library failed to load (libtdjni.so). Please reinstall the app."
+            )
+            return
+        }
+        runCatching {
+            val updateHandler = Client.ResultHandler { obj -> handleUpdate(obj) }
+            val excHandler = Client.ExceptionHandler { e ->
+                _authState.value = AuthState.Error("TDLib exception: ${e.message ?: e.toString()}")
+            }
+            client = Client.create(updateHandler, excHandler, excHandler)
+        }.onFailure {
+            _authState.value = AuthState.Error("Failed to start TDLib: ${it.message ?: it.toString()}")
+        }
+        // Do NOT send SetTdlibParameters here. TDLib emits
+        // AuthorizationStateWaitTdlibParameters asynchronously and we send
+        // the parameters only in response to that update.
     }
 
-    private fun tryLoadNative() {
-        runCatching { System.loadLibrary("tdjni") }
-    }
+    private fun tryLoadNative(): Boolean = runCatching {
+        System.loadLibrary("tdjni")
+    }.isSuccess
 
     private fun sendTdlibParameters() {
         val params = TdApi.SetTdlibParameters().apply {
@@ -66,7 +79,13 @@ class TdLibTelegramClient @Inject constructor(
         }
         File(params.databaseDirectory).mkdirs()
         File(params.filesDirectory).mkdirs()
-        client?.send(params) {}
+        client?.send(params) { result ->
+            if (result is TdApi.Error) {
+                _authState.value = AuthState.Error(
+                    "TDLib init rejected: code=${result.code} ${result.message}"
+                )
+            }
+        }
     }
 
     private fun handleUpdate(obj: TdApi.Object) {
@@ -79,7 +98,11 @@ class TdLibTelegramClient @Inject constructor(
 
     private fun handleAuth(state: TdApi.AuthorizationState?) {
         _authState.value = when (state) {
-            is TdApi.AuthorizationStateWaitTdlibParameters -> AuthState.Initializing
+            is TdApi.AuthorizationStateWaitTdlibParameters -> {
+                // TDLib is ready to accept SetTdlibParameters — send them now.
+                sendTdlibParameters()
+                AuthState.Initializing
+            }
             is TdApi.AuthorizationStateWaitPhoneNumber -> AuthState.WaitingPhone
             is TdApi.AuthorizationStateWaitCode -> AuthState.WaitingCode
             is TdApi.AuthorizationStateWaitPassword -> AuthState.WaitingPassword
