@@ -14,8 +14,13 @@ val localProps = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) load(FileInputStream(f))
 }
-val tdApiId: String = (localProps.getProperty("TD_API_ID") ?: System.getenv("TD_API_ID") ?: "0")
-val tdApiHash: String = (localProps.getProperty("TD_API_HASH") ?: System.getenv("TD_API_HASH") ?: "")
+// API_ID / API_HASH identify the *application* (not the user) to the Telegram
+// servers. Order: local.properties → environment → public TDLib sample defaults
+// (see https://github.com/tdlib/td/blob/master/example/java/td/example/Example.java).
+// The samples work for development; replace with your own pair from
+// https://my.telegram.org/apps before any production / Play Store release.
+val tdApiId: String = (localProps.getProperty("TD_API_ID") ?: System.getenv("TD_API_ID") ?: "94575")
+val tdApiHash: String = (localProps.getProperty("TD_API_HASH") ?: System.getenv("TD_API_HASH") ?: "a3406de8d171bb422bb6ddf3bbd800e2")
 
 android {
     namespace = "com.tgplayer.app"

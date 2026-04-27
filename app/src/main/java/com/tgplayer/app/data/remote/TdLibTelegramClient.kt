@@ -63,7 +63,6 @@ class TdLibTelegramClient @Inject constructor(
             systemLanguageCode = "en"
             deviceModel = "Android"
             applicationVersion = "1.0"
-            enableStorageOptimizer = true
         }
         File(params.databaseDirectory).mkdirs()
         File(params.filesDirectory).mkdirs()
@@ -85,7 +84,7 @@ class TdLibTelegramClient @Inject constructor(
             is TdApi.AuthorizationStateWaitCode -> AuthState.WaitingCode
             is TdApi.AuthorizationStateWaitPassword -> AuthState.WaitingPassword
             is TdApi.AuthorizationStateReady -> AuthState.Ready
-            is TdApi.AuthorizationStateLoggedOut, is TdApi.AuthorizationStateClosed -> AuthState.LoggedOut
+            is TdApi.AuthorizationStateLoggingOut, is TdApi.AuthorizationStateClosed -> AuthState.LoggedOut
             else -> _authState.value
         }
     }

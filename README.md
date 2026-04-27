@@ -41,40 +41,39 @@ app/
 
 ## First-time setup
 
-### 1. Get your Telegram API credentials
+### 1. Telegram API credentials
 
-The app authenticates each user as a regular Telegram user (not a bot).
-You need an **API ID** and **API Hash** for the application itself, obtained
-from <https://my.telegram.org/apps>.
+The app needs an `API ID` and `API Hash` to identify itself to Telegram
+servers (this is *application*-level identity, separate from each user's
+phone-number login). The repo ships with the public TDLib sample credentials
+baked into `BuildConfig` so the app works out of the box for development.
 
-Add them to `local.properties`:
+For a production / Play Store release you must register your own application
+at <https://my.telegram.org/apps> and override the credentials. The build
+looks them up in this order:
+
+1. `TD_API_ID` / `TD_API_HASH` in `local.properties`
+2. environment variables of the same names
+3. the public TDLib sample defaults (development only)
+
+Example `local.properties`:
 
 ```properties
 TD_API_ID=123456
 TD_API_HASH=abcdef0123456789abcdef0123456789
 ```
 
-### 2. Provide the TDLib native library
+### 2. TDLib native libraries
 
-The repo ships with a **stub** `org.drinkless.tdlib.Client` /
-`org.drinkless.tdlib.TdApi` so the project compiles out of the box. With the
-stub, all TDLib calls return an `Error`, which means **the app builds but does
-not actually talk to Telegram** until the real library is dropped in.
+Real TDLib bindings + native `libtdjni.so` for `arm64-v8a`, `armeabi-v7a`,
+`x86_64`, and `x86` are committed under `app/src/main/jniLibs/` and
+`app/src/main/java/org/drinkless/tdlib/`. The project compiles into a
+~107 MB debug APK that connects to Telegram on first launch.
 
-To enable real connectivity:
-
-1. Build TDLib for Android (or grab a pre-built distribution). The official
-   instructions live at
-   <https://github.com/tdlib/td/blob/master/example/android/README.md>.
-2. After the build, you'll have:
-   - `TdApi.java` and `Client.java` (auto-generated Java bindings)
-   - `libtdjni.so` for each ABI: `arm64-v8a`, `armeabi-v7a`, `x86_64`, `x86`
-3. Run the helper script:
-   ```sh
-   scripts/setup-tdlib.sh /path/to/tdlib/build
-   ```
-   It replaces the stub Java sources and copies the `.so` files into
-   `app/src/main/jniLibs/<abi>/`.
+If you need to rebuild TDLib (newer commit, different `OPENSSL` version,
+etc.), follow the official instructions at
+<https://github.com/tdlib/td/blob/master/example/android/README.md> and run
+`scripts/setup-tdlib.sh /path/to/tdlib/build` to refresh the bundled files.
 
 ### 3. Build & run
 
