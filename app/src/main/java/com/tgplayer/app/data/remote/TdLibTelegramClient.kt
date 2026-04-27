@@ -107,7 +107,13 @@ class TdLibTelegramClient @Inject constructor(
             is TdApi.AuthorizationStateWaitCode -> AuthState.WaitingCode
             is TdApi.AuthorizationStateWaitPassword -> AuthState.WaitingPassword
             is TdApi.AuthorizationStateReady -> AuthState.Ready
-            is TdApi.AuthorizationStateLoggingOut, is TdApi.AuthorizationStateClosed -> AuthState.LoggedOut
+            is TdApi.AuthorizationStateLoggingOut -> AuthState.LoggedOut
+            is TdApi.AuthorizationStateClosed -> {
+                // The native client has been torn down by TDLib; drop our
+                // reference so the next call to start() builds a fresh one.
+                client = null
+                AuthState.LoggedOut
+            }
             else -> _authState.value
         }
     }
