@@ -91,6 +91,14 @@ class PlaybackController @Inject constructor(
         _state.value = _state.value.copy(queue = tracks, currentIndex = safeStart, current = tracks.getOrNull(safeStart))
     }
 
+    /** Apply [transform] to any matching track in the queue and the currently playing track. */
+    fun updateTrackInQueue(trackId: Long, transform: (Track) -> Track) {
+        val s = _state.value
+        val newQueue = s.queue.map { if (it.id == trackId) transform(it) else it }
+        val newCurrent = s.current?.let { if (it.id == trackId) transform(it) else it }
+        _state.value = s.copy(queue = newQueue, current = newCurrent)
+    }
+
     /** Polls the current playback position from the underlying controller. */
     fun pollPosition() {
         val c = controller ?: return

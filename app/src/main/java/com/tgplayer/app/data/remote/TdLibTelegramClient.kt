@@ -137,8 +137,9 @@ class TdLibTelegramClient @Inject constructor(
     }
 
     private suspend fun loadAllChatIds(): List<Long> {
+        val c = client ?: return emptyList()
         val deferred = CompletableDeferred<TdApi.Chats>()
-        client?.send(TdApi.GetChats(TdApi.ChatListMain(), 200)) { result ->
+        c.send(TdApi.GetChats(TdApi.ChatListMain(), 200)) { result ->
             if (result is TdApi.Chats) deferred.complete(result)
             else deferred.complete(TdApi.Chats())
         }
@@ -146,25 +147,28 @@ class TdLibTelegramClient @Inject constructor(
     }
 
     private suspend fun getChat(chatId: Long): TdApi.Chat? {
+        val c = client ?: return null
         val deferred = CompletableDeferred<TdApi.Chat?>()
-        client?.send(TdApi.GetChat(chatId)) { result ->
+        c.send(TdApi.GetChat(chatId)) { result ->
             deferred.complete(result as? TdApi.Chat)
         }
         return deferred.await()
     }
 
     override suspend fun fetchAudioPage(chatId: Long, fromMessageId: Long, limit: Int): List<Track> {
+        val c = client ?: return emptyList()
         val deferred = CompletableDeferred<TdApi.Messages>()
-        client?.send(TdApi.GetChatHistory(chatId, fromMessageId, 0, limit, false)) { result ->
+        c.send(TdApi.GetChatHistory(chatId, fromMessageId, 0, limit, false)) { result ->
             if (result is TdApi.Messages) deferred.complete(result) else deferred.complete(TdApi.Messages())
         }
         val msgs = deferred.await()
-        return msgs.messages.mapNotNull { it.toTrackOrNull() }
+        return msgs.messages?.mapNotNull { it.toTrackOrNull() }.orEmpty()
     }
 
     override suspend fun downloadFile(fileId: Int, priority: Int, synchronous: Boolean): String? {
+        val c = client ?: return null
         val deferred = CompletableDeferred<TdApi.File?>()
-        client?.send(TdApi.DownloadFile(fileId, priority, 0, 0, synchronous)) { result ->
+        c.send(TdApi.DownloadFile(fileId, priority, 0, 0, synchronous)) { result ->
             deferred.complete(result as? TdApi.File)
         }
         return deferred.await()?.local?.path?.takeIf { it.isNotBlank() }

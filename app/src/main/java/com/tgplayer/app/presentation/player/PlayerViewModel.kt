@@ -28,6 +28,8 @@ class PlayerViewModel @Inject constructor(
     fun tick() = controller.pollPosition()
 
     fun toggleLike(track: Track) = viewModelScope.launch {
-        tracks.setLiked(track, !track.isLiked)
+        val newLiked = !track.isLiked
+        tracks.setLiked(track, newLiked)
+        controller.updateTrackInQueue(track.id) { it.copy(isLiked = newLiked) }
     }
 }
