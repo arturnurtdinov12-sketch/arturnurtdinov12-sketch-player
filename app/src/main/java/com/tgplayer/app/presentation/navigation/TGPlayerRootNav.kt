@@ -3,8 +3,11 @@ package com.tgplayer.app.presentation.navigation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
@@ -31,6 +34,14 @@ fun TGPlayerRootNav() {
     val authViewModel: AuthViewModel = hiltViewModel()
     val authState by authViewModel.state.collectAsState()
 
+    // Observe auth state from the root so navigation keeps working after the
+    // SPLASH destination is destroyed. Re-keying on each authState transition
+    // (and the current route) ensures retries when needed.
+    val currentEntry by navController.currentBackStackEntryAsState()
+    LaunchedEffect(authState, currentEntry?.destination?.route) {
+        routeForAuth(authState, currentEntry?.destination?.route, navController)
+    }
+
     Box(modifier = Modifier.fillMaxSize()) {
         NavHost(
             navController = navController,
@@ -38,7 +49,6 @@ fun TGPlayerRootNav() {
         ) {
             composable(Routes.SPLASH) {
                 SplashScreen()
-                LaunchedRouting(authState, navController)
             }
             composable(Routes.WELCOME) {
                 WelcomeScreen(onLoginClick = { navController.navigate(Routes.PHONE) })
@@ -104,30 +114,26 @@ fun TGPlayerRootNav() {
     }
 }
 
-@Composable
-private fun LaunchedRouting(
+private fun routeForAuth(
     state: AuthState,
-    navController: androidx.navigation.NavController
+    currentRoute: String?,
+    navController: NavController
 ) {
-    androidx.compose.runtime.LaunchedEffect(state) {
-        when (state) {
-            AuthState.Initializing -> Unit
-            AuthState.WaitingPhone -> navController.navigate(Routes.WELCOME) {
-                popUpTo(Routes.SPLASH) { inclusive = true }
-            }
-            AuthState.WaitingCode -> navController.navigate(Routes.CODE) {
-                popUpTo(Routes.SPLASH) { inclusive = true }
-            }
-            AuthState.WaitingPassword -> navController.navigate(Routes.PASSWORD) {
-                popUpTo(Routes.SPLASH) { inclusive = true }
-            }
-            AuthState.Ready -> navController.navigate(Routes.ROOT_TABS) {
-                popUpTo(Routes.SPLASH) { inclusive = true }
-            }
-            AuthState.LoggedOut -> navController.navigate(Routes.WELCOME) {
-                popUpTo(Routes.SPLASH) { inclusive = true }
-            }
-            is AuthState.Error -> Unit
-        }
+    val target = when (state) {
+        AuthState.WaitingPhone -> Routes.WELCOME
+        AuthState.WaitingCode -> Routes.CODE
+        AuthState.WaitingPassword -> Routes.PASSWORD
+        AuthState.Ready -> Routes.ROOT_TABS
+        AuthState.LoggedOut -> Routes.WELCOME
+        AuthState.Initializing, is AuthState.Error -> return
+    }
+    // Don't trigger redundant navigation — e.g. user typing on PhoneScreen
+    // shouldn't yank them back if WaitingPhone is re-emitted, and pushing
+    // WELCOME on top of PHONE would feel like a regression.
+    if (currentRoute == target) return
+    if (state == AuthState.WaitingPhone && currentRoute == Routes.PHONE) return
+    navController.navigate(target) {
+        popUpTo(0) { inclusive = true }
+        launchSingleTop = true
     }
 }
