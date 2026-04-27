@@ -24,15 +24,18 @@ class PlayerService : MediaSessionService() {
     @Inject lateinit var telegram: TelegramClient
 
     private var mediaSession: MediaSession? = null
+    private var cache: SimpleCache? = null
+    private var databaseProvider: androidx.media3.database.StandaloneDatabaseProvider? = null
 
     override fun onCreate() {
         super.onCreate()
         val cacheDir = File(cacheDir, "media").apply { mkdirs() }
+        val dbProvider = androidx.media3.database.StandaloneDatabaseProvider(this).also { databaseProvider = it }
         val cache = SimpleCache(
             cacheDir,
             LeastRecentlyUsedCacheEvictor(MAX_CACHE_BYTES),
-            androidx.media3.database.StandaloneDatabaseProvider(this)
-        )
+            dbProvider
+        ).also { this.cache = it }
 
         val tdLibFactory = TdLibAudioDataSourceFactory(telegram)
         val httpFactory = DefaultDataSource.Factory(this)
@@ -73,8 +76,12 @@ class PlayerService : MediaSessionService() {
         mediaSession?.run {
             player.release()
             release()
-            mediaSession = null
         }
+        mediaSession = null
+        cache?.release()
+        cache = null
+        databaseProvider?.close()
+        databaseProvider = null
         super.onDestroy()
     }
 

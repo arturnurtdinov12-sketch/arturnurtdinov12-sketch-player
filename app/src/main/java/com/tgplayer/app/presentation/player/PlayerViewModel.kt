@@ -25,7 +25,7 @@ class PlayerViewModel @Inject constructor(
     fun seekTo(ms: Long) = controller.seekTo(ms)
     fun toggleShuffle() = controller.setShuffle(!state.value.shuffle)
     fun cycleRepeat() = controller.cycleRepeat()
-    fun tick() { /* state.value triggers slider re-render via controller polling */ }
+    fun tick() = controller.pollPosition()
 
     fun toggleLike(track: Track) = viewModelScope.launch {
         tracks.setLiked(track, !track.isLiked)

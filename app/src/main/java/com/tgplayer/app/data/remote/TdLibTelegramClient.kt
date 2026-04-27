@@ -142,7 +142,7 @@ class TdLibTelegramClient @Inject constructor(
             if (result is TdApi.Chats) deferred.complete(result)
             else deferred.complete(TdApi.Chats())
         }
-        return deferred.await().chatIds.toList()
+        return deferred.await().chatIds?.toList().orEmpty()
     }
 
     private suspend fun getChat(chatId: Long): TdApi.Chat? {

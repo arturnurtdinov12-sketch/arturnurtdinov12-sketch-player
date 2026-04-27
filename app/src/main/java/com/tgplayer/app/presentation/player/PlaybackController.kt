@@ -43,6 +43,7 @@ class PlaybackController @Inject constructor(
 
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
+    private var pendingQueue: Pair<List<MediaItem>, Int>? = null
 
     fun connect() {
         if (controller != null || controllerFuture != null) return
@@ -53,6 +54,12 @@ class PlaybackController @Inject constructor(
                     val c = future.get()
                     controller = c
                     c.addListener(listener)
+                    pendingQueue?.let { (items, start) ->
+                        c.setMediaItems(items, start.coerceIn(0, items.size - 1), 0L)
+                        c.prepare()
+                        c.play()
+                    }
+                    pendingQueue = null
                     syncFromPlayer()
                 }
             }, MoreExecutors.directExecutor())
@@ -68,15 +75,26 @@ class PlaybackController @Inject constructor(
     }
 
     fun setQueue(tracks: List<Track>, startIndex: Int) {
+        if (tracks.isEmpty()) return
         connect()
         val items = tracks.map { it.toMediaItem() }
+        val safeStart = startIndex.coerceIn(0, items.size - 1)
         val c = controller
         if (c != null) {
-            c.setMediaItems(items, startIndex.coerceIn(0, items.size - 1), 0L)
+            c.setMediaItems(items, safeStart, 0L)
             c.prepare()
             c.play()
+        } else {
+            // Controller hasn't connected yet — replay once it's ready.
+            pendingQueue = items to safeStart
         }
-        _state.value = _state.value.copy(queue = tracks, currentIndex = startIndex, current = tracks.getOrNull(startIndex))
+        _state.value = _state.value.copy(queue = tracks, currentIndex = safeStart, current = tracks.getOrNull(safeStart))
+    }
+
+    /** Polls the current playback position from the underlying controller. */
+    fun pollPosition() {
+        val c = controller ?: return
+        _state.value = _state.value.copy(positionMs = c.currentPosition, durationMs = c.duration.coerceAtLeast(0L))
     }
 
     fun playPause() {
