@@ -1,0 +1,55 @@
+<resources>
+    <string name="app_name">TGPlayer</string>
+
+    <!-- Auth -->
+    <string name="auth_welcome_title">TGPlayer</string>
+    <string name="auth_welcome_subtitle">Music from your Telegram channels</string>
+    <string name="auth_login_button">Login via Telegram</string>
+    <string name="auth_phone_title">Enter your phone</string>
+    <string name="auth_phone_hint">Phone number</string>
+    <string name="auth_code_title">Enter the code</string>
+    <string name="auth_code_hint">Code from Telegram</string>
+    <string name="auth_password_title">Enter your password</string>
+    <string name="auth_continue">Continue</string>
+
+    <!-- Tabs -->
+    <string name="tab_channels">Channels</string>
+    <string name="tab_playlists">Playlists</string>
+    <string name="tab_now_playing">Now Playing</string>
+
+    <!-- Channels -->
+    <string name="channels_empty">No channels added yet</string>
+    <string name="channels_add">Add channels</string>
+    <string name="channel_select_title">Select channels with audio</string>
+    <string name="channel_select_save">Save selection</string>
+
+    <!-- Tracks -->
+    <string name="tracks_empty">No tracks here yet</string>
+    <string name="tracks_load_more">Load more</string>
+
+    <!-- Player -->
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_next">Next</string>
+    <string name="player_previous">Previous</string>
+    <string name="player_shuffle">Shuffle</string>
+    <string name="player_repeat">Repeat</string>
+    <string name="player_like">Like</string>
+    <string name="player_save_offline">Save offline</string>
+
+    <!-- Playlists -->
+    <string name="playlist_liked">Liked Tracks</string>
+    <string name="playlist_create">Create playlist</string>
+    <string name="playlist_play_all">Play all</string>
+    <string name="playlist_shuffle_all">Shuffle all</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_channels">Manage channels</string>
+    <string name="settings_cache">Cache</string>
+    <string name="settings_clear_cache">Clear cache</string>
+    <string name="settings_audio_quality">Audio quality</string>
+    <string name="settings_equalizer">Equalizer</string>
+    <string name="settings_about">About</string>
+    <string name="settings_logout">Log out</string>
+</resources>
